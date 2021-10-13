@@ -1,7 +1,7 @@
 import datetime
 
 import boto3
-from pandas import DatetimeIndex, Series
+from pandas import DatetimeIndex, Series, DataFrame
 from pyathena import connect
 import pandas as pd
 import numpy as np
@@ -22,58 +22,23 @@ class NumpyArrayEncoder(JSONEncoder):
             return obj.isoformat()
         if isinstance(obj, DatetimeIndex):
             return obj.to_numpy().tolist()
+        if isinstance(obj, DataFrame):
+            return obj.to_numpy().tolist()
         if isinstance(obj, Series):
-            return  obj.tolist()
+            return obj.tolist()
         return JSONEncoder.default(self, obj)
 
 
-
 def authenticate():
-    keyId = "ASIA5ZSVDEHM7ZXHYTTY"
-    sKeyId = 'sWikpvPCZ0cfuJj1vrOE8nM/sdLwCcY4mUOP5Xc0'
-    sessionToken = "IQoJb3JpZ2luX2VjEC0aCWV1LXdlc3QtMSJHMEUCIB97jO4am3VuyV4T28zIROwdQSFyBsqoupdYOkYoKleAAiEA264UrBSG7G/ErDyCwBV4jw14dIwoTHXEowim1ySyJnIqngMIpv//////////ARACGgw5NDgyOTI0OTM3ODUiDE+nPWFmt7+L3nYDvyryAtSDNGVknSUWkGTM1QT5yV4xYrjvQUMrwIyfLFreNjkl/RZIgLszzocKpbtkv19Iq/7/09v5b8t+QWqeVEJ6kMtuhQwiXDboU9pMkrI4r81S5dB5PAFSKe6m1Hw58irqNnYUrIq/Uw7YuAAvM0uIdYLFUwNG3vzTTKP9nlFTwROkRW3dZMcnILvF1+xvfGVmZFeZPODxSGhEwj+BxEe8CAiqj62RmHySgIp4mBlmk6I9QxViwHXb1rBG6ypH34TbnsH7iifqmdSbFXHRyRAmDvYTJF8elvjX8YZPVdoTADtuRL4I+K3LC24weT3uVhZCqvkKmuJI62ry7ojRhYxMODZWCHT0/SZiem4dYUVUVAvR+YebNwuZtTQKT0MOkvelWmAqakMKfpxCyMer4c5akNGfrvbBTjthCs9ao8DEBMhOBaOrkBZklSLWrVeREnL+RHiN1zlUnPZr4dO4jg1Kk1Cq+oNmKsmcGgCNvlfwxKUt2wcwt/6AiwY6pgHKlMsxB5vEpDmaW4ARxUbKxdE4PI6tA/QAzIo5tUIPBTA5u2lKV4FNLCJ+KTN9RmfjA9lkUrh9j9972+yP+TNYRSs0RqquP4IKqHcssUbxeabsCwGGGi5mJRRHgYldbLEvsuW6NByYjaRgbLi2h6W6fOUVy55IWo66LreUs9KLjmTV9GHmElr7Y/t6vQhpg4T303UlOoSmIHsj7W62DUqlW2nL26aY"
+
+    keyId = "ASIA5ZSVDEHMXE57NHVP"
+    sKeyId = "qE1uvhQfhna3d5l56MXhwRHZUrYdy8A0134ClG95"
+    sessionToken = "IQoJb3JpZ2luX2VjEKX//////////wEaCWV1LXdlc3QtMSJHMEUCIEJXBP9t8SR6jddp7ZTQwi1ADXhmCiNn1k/AGCP8BEmvAiEAm0qxEUBdNr3GitI5HArC2+oaVcvhgvRj1hNaJjfxge4qlQMILRACGgw5NDgyOTI0OTM3ODUiDOyMZlpfiOb9LnNxQCryAuZZ1hWhUwM51JRyb/9crEJ2RD3FLSZExFlu4mUbnNd9emu2H8oUjqEzURQFF/JerJICAAGIerfAxXVc1MWMrkNQjKAUZFG4vsU4N2nmRkIMyvke2kXdzNQdk0uXFeuwUof7GppgWb4+t2s21mvJuirnNYiDlflT4bmuKr5eJKEaB3KKk+6WDYqQIPpghblFRAvzUssBppRcnnCFH8odCxrkqD4vDPvyUWy1/nOdt624qvv4g/HuCmGghyPjxI6cwjTKKlaWe1Su+VzHxZVd35KMlmVwXDOaSTvzGJC6vj+DrOq4rn7oQlAgX4Sz4JrMKmZgRlwwQAA5N2o4u7mVmDPLZqnNzP+XFket0a1LGHhmct0mpy3lGc9yN4zPfYnuYnKi2QZkNqxbbdbTvWdusP5ylzTUYtCm0AbuWXu2usJwoBTr1CNA6MqQZ06aoAp7VbXsoJbUr+2m1quJoHm3N8FUz+ObNoD2QKYL0hvKiH3sghwwqJ2biwY6pgFU1BkTU/A+jNrECwY7LMMdXzWePDPhx4UUwjiLZxcTPo2aGEwPA3kVQk1sT1MJYPK+WcoJdDnUSdb3zyZ0e7gWYWQRs9X7LrhnjeSwJm6qGC6WGoubh+2yG3waZHeLQsZfwf98n+AWi34xd06a6iLrE5U1nBYaoIrfpkPxB6Ywjy+ZfXPjcFpKWaXG4h9mwLGdqBfQVX7SUyHCiOdy9Gu42BW+YFfP"
     return connect(aws_access_key_id=keyId,
                    aws_secret_access_key=sKeyId,
                    aws_session_token=sessionToken,
                    s3_staging_dir='s3://peruser-athena-result/',
                    region_name='eu-west-1')
-
-    # return boto3.client("s3",
-    #                     aws_access_key_id=keyId,
-    #                     aws_secret_access_key=sKeyId,
-    #                     aws_session_token=sessionToken,
-    #                     )
-
-
-# def getS3File(fileName, spn, unitID):
-#     cursor = authenticate()
-#     bucketName = "politecnico-data"
-#
-#     print(fileName)
-#
-#     response = s3.get_object(Bucket=bucketName, Key=fileName)
-#     status = response.get("ResponseMetadata", {}).get("HTTPStatusCode")
-#
-#     if status == 200:
-#         print(f"Successful S3 get_object response. Status - {status}")
-#
-#         df = pd.read_csv(response.get("Body"),
-#                          usecols=['timestamp', 'unit_ID', 'spn', 'can_value_converted',
-#                                   'engineonoff', 'ontime',
-#                                   'offtime', 'deltaT'])
-#         df['timestamp'] = df['timestamp'].astype('datetime64[s]')
-#         df = df.replace(np.nan, '', regex=True)
-#         df = df[df.spn == spn]
-#         print(df.size)
-#         df = df[df.unit_ID == unitID]
-#         print(df.size)
-#         print(df.spn.unique())
-#         return df.to_json(orient="records")
-#
-#     else:
-#         print(f"Unsuccessful S3 get_object response. Status - {status}")
-#
-#     return "ciao"
 
 def getUnitID():
     spn_default = [100, 110, 183, 190, 247, 30000, 30856]
@@ -107,6 +72,8 @@ def getData(spns, unitID):
     df = pd.DataFrame([],
                       columns=['spn', 'timestamp', 'can_value_converted'])
     data = []
+    df_workcycle = getOnOff(unitID)
+
     for spn in spns:
         df = pd.read_sql(
             f"SELECT DISTINCT spn , timestamp ,can_value_converted FROM tierra_dwh_blend.adq_master_can_v2 WHERE unit_id={unitID} and spn={spn}",
@@ -115,33 +82,35 @@ def getData(spns, unitID):
         df = df.reset_index(drop=True)
 
         df = df.sort_values(by='timestamp')
-        df['timestamp'] = df['timestamp'].astype('datetime64[s]')
-
-        x_o, y_o = outlierDetection(df, spn)
         timestamp = df['timestamp'].to_numpy().astype('datetime64[s]')
 
-        if len(x_o)==0:
-            record = {'spn': spn, 'x': timestamp, 'y': df['can_value_converted'].to_numpy(),
-                      'x_o': x_o, 'y_o': y_o}
-        else:
-            x_o = x_o.to_numpy().astype('datetime64[s]')
-            y_o = y_o.to_numpy()
+        tmp = pd.merge_asof(df, df_workcycle, left_on='timestamp', right_on='ontime')
+        tmp.loc[(tmp.ontime > tmp.timestamp) | (tmp.offtime < tmp.timestamp), 'ontime'] = pd.NaT
+        tmp.loc[(tmp.ontime > tmp.timestamp) | (tmp.offtime < tmp.timestamp), 'offtime'] = pd.NaT
 
-            record = {'spn': spn, 'x': timestamp, 'y': df['can_value_converted'].to_numpy(),
-                      'x_o': x_o, 'y_o': y_o}
+        m_on = tmp.groupby(tmp.ontime).apply(lambda x: x.iloc[[0]])
+        m_on.index = m_on.index.droplevel(0)
+
+        m_off = tmp.groupby(tmp.ontime).apply(lambda x: x.iloc[[-1]])
+
+        m_off.index = m_off.index.droplevel(0)
+
+        df['engineonoff'] = np.where(df.index.isin(m_on.index), 'ON',
+                                       np.where(df.index.isin(m_off.index), 'OFF', ''))
+
+        ids = outlierDetection(df, spn)
+
+        record = {'spn': spn, 'x': timestamp, 'y': df['can_value_converted'].to_numpy(), 'ids': ids, 'workcycle': df['engineonoff']}
 
         data.append(record)
     if data:
         return json.dumps({'data': data}, cls=NumpyArrayEncoder)
-
-
     else:
         return "Record not found", 400
 
 
 def outlierDetection(df, spn):
-    x_o = []
-    y_o = []
+    ids = []
     data = df
     data = data.reset_index(drop=True)
     data = data.set_index('timestamp')
@@ -149,29 +118,44 @@ def outlierDetection(df, spn):
     if int(spn) == 110:
         outlier_detector = OutlierDetector(LocalOutlierFactor(contamination='auto'))
         anomaliesLOF = outlier_detector.fit_detect(data_v)
-
         anomaliesLOF = pd.DataFrame(anomaliesLOF)
         anomaliesLOF.columns = ['can_value_converted']
-        indice_l = np.where(anomaliesLOF['can_value_converted'] == True)
-        x_o = data.iloc[indice_l].index
-        y_o = data.iloc[indice_l].can_value_converted
-        # text = data.iloc[indice_l]['engineonoff']
+        ids = anomaliesLOF['can_value_converted'].apply(lambda x: 1 if x == True else 0)
+
     if int(spn) == 190 or int(spn) == 100:
         autoreg = AutoregressionAD(n_steps=11, step_size=1, regressor=None, c=6.0, side='both')
         anomaliesAR = autoreg.fit_detect(data_v)
-        indice_ar = np.where(anomaliesAR['can_value_converted'] == 1)
-        x_o = data.iloc[indice_ar].index
-        y_o = data.iloc[indice_ar].can_value_converted
-        # text = data.iloc[indice_ar]['engineonoff']
-
+        ids = anomaliesAR['can_value_converted'].apply(lambda x: 1 if x == True else 0)
     if int(spn) == 183 or int(spn) == 247 or int(spn) == 30856 or int(spn) == 30000:
         persistAD = PersistAD(window=11, c=6.0, side='both', min_periods=None, agg='median')
-
         anomaliesP = persistAD.fit_detect(data_v)
-        indice_p = np.where(anomaliesP['can_value_converted'] == 1)
-        x_o = data.iloc[indice_p].index
-        y_o = data.iloc[indice_p].can_value_converted
-        # text = data.iloc[indice_p]['engineonoff']
+        ids = anomaliesP['can_value_converted'].apply(lambda x: 1 if x == True else 0)
+
+    return ids
 
 
-    return x_o, y_o
+def getOnOff(unitID):
+    conn = authenticate()
+    df = pd.read_sql(
+        f"SELECT ontime,offtime FROM tierra_dwh_blend.bln_master_engineonoff WHERE unit_id={unitID}", conn)
+
+
+    df = df.sort_values(by='ontime')
+    df = df.drop_duplicates('ontime')
+    df = df.reset_index(drop=True)
+
+
+    return df
+
+
+def getGeneralInfo(unit_id):
+    conn = authenticate()
+    df = pd.read_sql(f"SELECT tenant, unit_brand_name, unit_type_name, unit_model_name FROM tierra_dwh_blend.bln_master_unit WHERE unit_id={unit_id}", conn)
+    df_pos = pd.read_sql(f"SELECT unlpos_address FROM blend_smart_duplication_dwh.smartdelta_tierra_dbcore_public_unl_pos WHERE unlpos_unit={unit_id}", conn)
+
+    data = {'tenant': df['tenant'].to_numpy()[0], 'unit_brand_name': df['unit_brand_name'].to_numpy()[0], 'unit_type_name': df['unit_type_name'].to_numpy()[0],
+            'unit_model_name': df['unit_model_name'].to_numpy()[0], 'unlpos_address': df_pos['unlpos_address'].to_numpy()}
+    if df.empty:
+        return "Record not found", 400
+    return json.dumps({'data': data}, cls=NumpyArrayEncoder)
+

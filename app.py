@@ -34,13 +34,15 @@ def getSPN():
 def getValues():
     unitID = request.args.get("unit_id")
     spns = request.args.getlist('spn')
-
-
-    # array = [{"spn": "r", "x": [1, 2, 3, 4, 5], "y": [1, 2, 3, 4, 5]}, {"spn": "n", "x": [1, 2, 3, 4, 5], "y": [1, 2, 3, 4, 5]},
-    #          {"spn": "m", "x": [1, 2, 3, 4, 5], "y": [1, 2, 3, 4, 5]}, {"spn": "d", "x": [1, 2, 3, 4, 5], "y": [1, 2, 3, 4, 5]},
-    #          {"spn": "e", "x": [1, 2, 3, 4, 5], "y": [1, 2, 3, 4, 5]}, {"spn": "f", "x": [1, 2, 3, 4, 5], "y": [1, 2, 3, 4, 5]}]
     # elements = [x for x in array if x["spn"] in request_data_list]
-    return awsHandler.getData(spns , unitID)
+    return awsHandler.getData(spns, unitID)
+
+
+@app.route('/info', methods=['GET'])
+def getInfo():
+    unitID = request.args.get("unit_id")
+    return awsHandler.getGeneralInfo(unitID)
+
 
 
 @app.route('/plotGetData', methods=['POST'])
