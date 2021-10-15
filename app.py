@@ -43,23 +43,30 @@ def getInfo():
     unitID = request.args.get("unit_id")
     return awsHandler.getGeneralInfo(unitID)
 
+@app.route('/searchPattern', methods=['GET'])
+def getPattern():
+    unitID = request.args.get("unit_id")
+    spn = request.args.get("spn")
+    min_time=request.args.get("min_time")
+    max_time=request.args.get("max_time")
+    return awsHandler.searchPattern(unitID,spn,min_time,max_time)
 
 
-@app.route('/plotGetData', methods=['POST'])
-def plotGetData():
-    request_data = request.get_json()
-    folder = 'active_data_quality/'
-    nameFile = request_data['nameFile']
-    path = folder + nameFile
-    spn = int(request_data['spn'])
-    unitID = int(request_data['unitID'])
-    print(nameFile)
-    print(spn)
-    print(unitID)
-    print(type(unitID))
-    print(type(spn))
-    # TODO VERIFICA TYPE E LUNGEZZA DATI
-    return awsHandler.getS3File(path, spn, unitID)
+# @app.route('/plotGetData', methods=['POST'])
+# def plotGetData():
+#     request_data = request.get_json()
+#     folder = 'active_data_quality/'
+#     nameFile = request_data['nameFile']
+#     path = folder + nameFile
+#     spn = int(request_data['spn'])
+#     unitID = int(request_data['unitID'])
+#     print(nameFile)
+#     print(spn)
+#     print(unitID)
+#     print(type(unitID))
+#     print(type(spn))
+#     # TODO VERIFICA TYPE E LUNGEZZA DATI
+#     return awsHandler.getS3File(path, spn, unitID)
 
 
 if __name__ == '__main__':

@@ -1,6 +1,7 @@
 import datetime
 
 import boto3
+import stumpy
 from pandas import DatetimeIndex, Series, DataFrame
 from pyathena import connect
 import pandas as pd
@@ -31,14 +32,15 @@ class NumpyArrayEncoder(JSONEncoder):
 
 def authenticate():
 
-    keyId = "ASIA5ZSVDEHMXE57NHVP"
-    sKeyId = "qE1uvhQfhna3d5l56MXhwRHZUrYdy8A0134ClG95"
-    sessionToken = "IQoJb3JpZ2luX2VjEKX//////////wEaCWV1LXdlc3QtMSJHMEUCIEJXBP9t8SR6jddp7ZTQwi1ADXhmCiNn1k/AGCP8BEmvAiEAm0qxEUBdNr3GitI5HArC2+oaVcvhgvRj1hNaJjfxge4qlQMILRACGgw5NDgyOTI0OTM3ODUiDOyMZlpfiOb9LnNxQCryAuZZ1hWhUwM51JRyb/9crEJ2RD3FLSZExFlu4mUbnNd9emu2H8oUjqEzURQFF/JerJICAAGIerfAxXVc1MWMrkNQjKAUZFG4vsU4N2nmRkIMyvke2kXdzNQdk0uXFeuwUof7GppgWb4+t2s21mvJuirnNYiDlflT4bmuKr5eJKEaB3KKk+6WDYqQIPpghblFRAvzUssBppRcnnCFH8odCxrkqD4vDPvyUWy1/nOdt624qvv4g/HuCmGghyPjxI6cwjTKKlaWe1Su+VzHxZVd35KMlmVwXDOaSTvzGJC6vj+DrOq4rn7oQlAgX4Sz4JrMKmZgRlwwQAA5N2o4u7mVmDPLZqnNzP+XFket0a1LGHhmct0mpy3lGc9yN4zPfYnuYnKi2QZkNqxbbdbTvWdusP5ylzTUYtCm0AbuWXu2usJwoBTr1CNA6MqQZ06aoAp7VbXsoJbUr+2m1quJoHm3N8FUz+ObNoD2QKYL0hvKiH3sghwwqJ2biwY6pgFU1BkTU/A+jNrECwY7LMMdXzWePDPhx4UUwjiLZxcTPo2aGEwPA3kVQk1sT1MJYPK+WcoJdDnUSdb3zyZ0e7gWYWQRs9X7LrhnjeSwJm6qGC6WGoubh+2yG3waZHeLQsZfwf98n+AWi34xd06a6iLrE5U1nBYaoIrfpkPxB6Ywjy+ZfXPjcFpKWaXG4h9mwLGdqBfQVX7SUyHCiOdy9Gu42BW+YFfP"
+    keyId = "ASIA5ZSVDEHMR5VWGXVO"
+    sKeyId = "TI65v4vnlkCRIadd3CSI3NrcnPBMevaIAYkWShwp"
+    sessionToken = "IQoJb3JpZ2luX2VjENT//////////wEaCWV1LXdlc3QtMSJGMEQCIDDTjkQqFy9c05TQqvJiVXZsFuWj/Iz3VjphdxNhR7VwAiBvGFSMAYzxZINy8yvR1Kx+b76fIxivLJY1Do/yKbrmqCqVAwhdEAIaDDk0ODI5MjQ5Mzc4NSIMj52i2k0I/L6IdlPYKvICPEM0l9wcXFz3o2FfFD+yA0zlhFhdJXHa9w3yxKLXCdTpXdzUGcP1yPxCPnSQC2D5TQBL8p/W99Jr6SDwh28EXi2g6JjHyC0TRkoxh3UJbdygEqrOQmvqhrbs8Ukv8o/ZCe+5LT+ZGy5nev+IzH8PoANtuWa181QTmsfEdHlECDElafuExjuM+mXEqE05K8v/LYjk3I4X6W/FNcmo4A9tnmFgYQr4m5hclfEgDvEaOt/7kDnmCXKq8rUn/bdtOyCIcH8E25JAwY22kq+cLNxuMGVC6nzHEOumL/Hm4uGQ0w3eT8o53ASyAlUemqSpmeIH+NJ6DZxldNFT+wuIIp/R1licI96NkA9Cnm8CB7ht0pV4PJUQQNKApIE8JFr6noF9ALkzH9y5qJV+KggnQwvT3K5ZmQXo+1bKjQwunPhopzo0dgyjeNOeBw4zNFNCv3MbZcVddsdXpVLF+XhgqceEVxkhLAGSv8iM/FNLMIgmG4Wn1jCk26WLBjqnAa1aDnXfljhOleoTQrtq04hSdZWMyOvkGT+fvb0riMg/feE1BwNb/ntar7AJnHbv6oDp7VtkCHF9EHEkHgQYemEdbpFVmxwm3YKoxlfdBZ4cr4QohAW6ysgGk+fJrgCZvdAivjowAPPYRvhSDmDjkdS/5vI+C3WYCkbI4FCJEoP2WfvApLFpo3OKvOv+Sh/nRUOIGCfsaike2SkgDKlaNqvDUXemcBbk"
     return connect(aws_access_key_id=keyId,
                    aws_secret_access_key=sKeyId,
                    aws_session_token=sessionToken,
                    s3_staging_dir='s3://peruser-athena-result/',
                    region_name='eu-west-1')
+
 
 def getUnitID():
     spn_default = [100, 110, 183, 190, 247, 30000, 30856]
@@ -96,11 +98,12 @@ def getData(spns, unitID):
         m_off.index = m_off.index.droplevel(0)
 
         df['engineonoff'] = np.where(df.index.isin(m_on.index), 'ON',
-                                       np.where(df.index.isin(m_off.index), 'OFF', ''))
+                                     np.where(df.index.isin(m_off.index), 'OFF', ''))
 
         ids = outlierDetection(df, spn)
 
-        record = {'spn': spn, 'x': timestamp, 'y': df['can_value_converted'].to_numpy(), 'ids': ids, 'workcycle': df['engineonoff']}
+        record = {'spn': spn, 'x': timestamp, 'y': df['can_value_converted'].to_numpy(), 'ids': ids,
+                  'workcycle': df['engineonoff']}
 
         data.append(record)
     if data:
@@ -139,23 +142,60 @@ def getOnOff(unitID):
     df = pd.read_sql(
         f"SELECT ontime,offtime FROM tierra_dwh_blend.bln_master_engineonoff WHERE unit_id={unitID}", conn)
 
-
     df = df.sort_values(by='ontime')
     df = df.drop_duplicates('ontime')
     df = df.reset_index(drop=True)
-
 
     return df
 
 
 def getGeneralInfo(unit_id):
     conn = authenticate()
-    df = pd.read_sql(f"SELECT tenant, unit_brand_name, unit_type_name, unit_model_name FROM tierra_dwh_blend.bln_master_unit WHERE unit_id={unit_id}", conn)
-    df_pos = pd.read_sql(f"SELECT unlpos_address FROM blend_smart_duplication_dwh.smartdelta_tierra_dbcore_public_unl_pos WHERE unlpos_unit={unit_id}", conn)
+    df = pd.read_sql(
+        f"SELECT tenant, unit_brand_name, unit_type_name, unit_model_name FROM tierra_dwh_blend.bln_master_unit WHERE unit_id={unit_id}",
+        conn)
+    df_pos = pd.read_sql(
+        f"SELECT unlpos_address FROM blend_smart_duplication_dwh.smartdelta_tierra_dbcore_public_unl_pos WHERE unlpos_unit={unit_id}",
+        conn)
 
-    data = {'tenant': df['tenant'].to_numpy()[0], 'unit_brand_name': df['unit_brand_name'].to_numpy()[0], 'unit_type_name': df['unit_type_name'].to_numpy()[0],
-            'unit_model_name': df['unit_model_name'].to_numpy()[0], 'unlpos_address': df_pos['unlpos_address'].to_numpy()}
+    data = {'tenant': df['tenant'].to_numpy()[0], 'unit_brand_name': df['unit_brand_name'].to_numpy()[0],
+            'unit_type_name': df['unit_type_name'].to_numpy()[0],
+            'unit_model_name': df['unit_model_name'].to_numpy()[0],
+            'unlpos_address': df_pos['unlpos_address'].to_numpy()}
     if df.empty:
         return "Record not found", 400
     return json.dumps({'data': data}, cls=NumpyArrayEncoder)
 
+
+def searchPattern(unitID, spn, min_time, max_time):
+    conn = authenticate()
+    data = []
+
+    df = pd.read_sql(
+        f"SELECT DISTINCT timestamp ,can_value_converted FROM tierra_dwh_blend.adq_master_can_v2 WHERE "
+        f"unit_id={unitID} and spn={spn}",
+        conn)
+    df = df.drop_duplicates('timestamp')
+    df = df.reset_index(drop=True)
+
+    df = df.sort_values(by='timestamp')
+
+    mask = (df.timestamp.astype('datetime64[s]') >= min_time) & (df['timestamp'].astype('datetime64[s]') <= max_time)
+    motif = df.loc[mask]
+
+    distance_profile = stumpy.core.mass(motif['can_value_converted'], df['can_value_converted'])
+    k = 4
+    idxs = np.argpartition(distance_profile, k)[:k]
+    idxs = idxs[np.argsort(distance_profile[idxs])]
+    idxs = np.delete(idxs, 0)
+    # idxs è il primo indice della serie temporale
+    #TODO set treshood for distance an return thant or indexes null
+    size = len(motif['can_value_converted'])
+
+    record = {'indexes': idxs, 'size': size}
+
+    data.append(record)
+    if data:
+        return json.dumps({'data': data}, cls=NumpyArrayEncoder)
+    else:
+        return "Record not found", 400
