@@ -27,14 +27,15 @@ class NumpyArrayEncoder(JSONEncoder):
             return obj.to_numpy().tolist()
         if isinstance(obj, Series):
             return obj.tolist()
+
         return JSONEncoder.default(self, obj)
 
 
 def authenticate():
 
-    keyId = "ASIA5ZSVDEHMR5VWGXVO"
-    sKeyId = "TI65v4vnlkCRIadd3CSI3NrcnPBMevaIAYkWShwp"
-    sessionToken = "IQoJb3JpZ2luX2VjENT//////////wEaCWV1LXdlc3QtMSJGMEQCIDDTjkQqFy9c05TQqvJiVXZsFuWj/Iz3VjphdxNhR7VwAiBvGFSMAYzxZINy8yvR1Kx+b76fIxivLJY1Do/yKbrmqCqVAwhdEAIaDDk0ODI5MjQ5Mzc4NSIMj52i2k0I/L6IdlPYKvICPEM0l9wcXFz3o2FfFD+yA0zlhFhdJXHa9w3yxKLXCdTpXdzUGcP1yPxCPnSQC2D5TQBL8p/W99Jr6SDwh28EXi2g6JjHyC0TRkoxh3UJbdygEqrOQmvqhrbs8Ukv8o/ZCe+5LT+ZGy5nev+IzH8PoANtuWa181QTmsfEdHlECDElafuExjuM+mXEqE05K8v/LYjk3I4X6W/FNcmo4A9tnmFgYQr4m5hclfEgDvEaOt/7kDnmCXKq8rUn/bdtOyCIcH8E25JAwY22kq+cLNxuMGVC6nzHEOumL/Hm4uGQ0w3eT8o53ASyAlUemqSpmeIH+NJ6DZxldNFT+wuIIp/R1licI96NkA9Cnm8CB7ht0pV4PJUQQNKApIE8JFr6noF9ALkzH9y5qJV+KggnQwvT3K5ZmQXo+1bKjQwunPhopzo0dgyjeNOeBw4zNFNCv3MbZcVddsdXpVLF+XhgqceEVxkhLAGSv8iM/FNLMIgmG4Wn1jCk26WLBjqnAa1aDnXfljhOleoTQrtq04hSdZWMyOvkGT+fvb0riMg/feE1BwNb/ntar7AJnHbv6oDp7VtkCHF9EHEkHgQYemEdbpFVmxwm3YKoxlfdBZ4cr4QohAW6ysgGk+fJrgCZvdAivjowAPPYRvhSDmDjkdS/5vI+C3WYCkbI4FCJEoP2WfvApLFpo3OKvOv+Sh/nRUOIGCfsaike2SkgDKlaNqvDUXemcBbk"
+    keyId = "ASIA5ZSVDEHMW3ZOP3OY"
+    sKeyId ="FtLfckF1l8b2YxHSLitZECVpFt8LXZOVTlPD+uLh"
+    sessionToken ="IQoJb3JpZ2luX2VjEOH//////////wEaCWV1LXdlc3QtMSJHMEUCIF2SBP8pUUHjJoI62y0TrJ6igZ8YNke/6qqYpQyT7zi9AiEAs8p7Qa0+JfNcK+PJ/W3caNA598UKvK1KyEoejdj/BaQqlQMIeRACGgw5NDgyOTI0OTM3ODUiDH9ZhwIQQScIWwg9zyryAvGhq+7WdZl6gi6KnNj4YjG2AGNAuJLULmkD9770O8s6W58AuiSaQwnXgEIwAo327xbSQxJb9riakirnFK2CXVjBjYhvAfVNY4opplhI4GCHTj8VGAVTIiQz7F69ADlDM4RTgO72wKohNI3wFoKFYCzTDpx2CHvQRy2vAvzzr8204KoMXbPoNNw0zZt+45XN5qYvl/FAsoVfCzb5GQrqxMECfYs1ym3gCWQOPKyoUz4BOlDDL/10XW0HY2Cj+VtZqZXv8/MYZbKnrlodsFFDihVsHjh24Y+Ja81x+1nuFVj47SBTnEDRu7NXsywhTWhQoF6whUPZ/h8Fryszu71jmSOXg/XXpblPI8klz9KimJHtYI9a09UdXz6OmhrwtXnTUTL8hJWoNKfnnlhPkfRpU9/aWFO+bDGVOK9woisfAnUutEEJiCK/MKSb2Jo2fu7OrISCPXMtOzTaitdjcCB31hVu4Z3zs0CDVYtI6zBMSILwYF8wq9TgiwY6pgHvPjLQwpj9t8NyLntsauDDq7sDLe49Wl3FB6UQIi2ici47A4turTJwyNMg4ayC29y7yuSYy1k8RZZ87KCAmL+owthGgAlZR3kQ4mKSBJKrd4MBnZKXWRrVE1TF0qE5OfrrD+dpC+fjkUUcHmJMfC+YyI8FR7uuZuEXOxdZXocU8ckH4YZJcE4GpsSkP0lDquV8Pz22c53Z37xQq14gT1Xrtq91zpMF"
     return connect(aws_access_key_id=keyId,
                    aws_secret_access_key=sKeyId,
                    aws_session_token=sessionToken,
@@ -54,6 +55,7 @@ def getUnitID():
     df = pd.merge(df_unit_id, df_info)
     df = df.drop(columns=['spn'])
     df = df.drop_duplicates()
+
     if df.empty:
         return "Record not found", 400
     return df.to_json(orient="records")
@@ -99,14 +101,17 @@ def getData(spns, unitID):
 
         df['engineonoff'] = np.where(df.index.isin(m_on.index), 'ON',
                                      np.where(df.index.isin(m_off.index), 'OFF', ''))
-
+        if df.size < 100:
+            return "Record not found", 400
         ids = outlierDetection(df, spn)
 
         record = {'spn': spn, 'x': timestamp, 'y': df['can_value_converted'].to_numpy(), 'ids': ids,
                   'workcycle': df['engineonoff']}
 
         data.append(record)
+
     if data:
+
         return json.dumps({'data': data}, cls=NumpyArrayEncoder)
     else:
         return "Record not found", 400
@@ -170,32 +175,44 @@ def getGeneralInfo(unit_id):
 def searchPattern(unitID, spn, min_time, max_time):
     conn = authenticate()
     data = []
-
     df = pd.read_sql(
-        f"SELECT DISTINCT timestamp ,can_value_converted FROM tierra_dwh_blend.adq_master_can_v2 WHERE "
+        f"SELECT timestamp ,can_value_converted FROM tierra_dwh_blend.adq_master_can_v2 WHERE "
         f"unit_id={unitID} and spn={spn}",
         conn)
-    df = df.drop_duplicates('timestamp')
-    df = df.reset_index(drop=True)
 
     df = df.sort_values(by='timestamp')
+    df = df.drop_duplicates('timestamp')
+    df = df.reset_index(drop=True)
+    df['timestamp'] = df['timestamp'].astype('datetime64[s]')
 
-    mask = (df.timestamp.astype('datetime64[s]') >= min_time) & (df['timestamp'].astype('datetime64[s]') <= max_time)
+    mask = (df['timestamp'] >= min_time) & (df['timestamp'] <= max_time)
     motif = df.loc[mask]
 
+    size = motif['can_value_converted'].size
+
+
     distance_profile = stumpy.core.mass(motif['can_value_converted'], df['can_value_converted'])
-    k = 4
-    idxs = np.argpartition(distance_profile, k)[:k]
-    idxs = idxs[np.argsort(distance_profile[idxs])]
-    idxs = np.delete(idxs, 0)
-    # idxs è il primo indice della serie temporale
-    #TODO set treshood for distance an return thant or indexes null
-    size = len(motif['can_value_converted'])
+
+    theshold = 1.6
+    idxs = np.array([])
+    index = np.argsort(distance_profile)
+    f = np.array([])
+    for i in index:
+        if distance_profile[i] <= theshold:
+            idxs = np.append(idxs, i)
+            f = np.append(f, i+size)
+            if(pd.IntervalIndex.from_arrays(idxs, f).is_overlapping):
+                idxs = np.delete(idxs,-1)
+                f = np.delete(f,-1)
+
+    #index = pd.IntervalIndex.from_arrays(idxs, f)
+     #print(index.is_overlapping)
+    idxs = [int(str(i).replace(".0","")) for i in idxs]
+    #print(idxs)
 
     record = {'indexes': idxs, 'size': size}
-
     data.append(record)
     if data:
-        return json.dumps({'data': data}, cls=NumpyArrayEncoder)
+        return json.dumps({'data': record}, cls=NumpyArrayEncoder)
     else:
         return "Record not found", 400
