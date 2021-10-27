@@ -1,11 +1,12 @@
-from flask import Flask, request, render_template, jsonify
-from flask_cors import CORS, cross_origin
+from flask import Flask, request, jsonify
+from flask_cors import CORS
 
 import awsHandler;
 from someException import SomeException
 
 app = Flask(__name__)
 cors = CORS(app, resources={"/*": {"origins": "*"}})
+
 
 
 @app.errorhandler(SomeException)
@@ -33,8 +34,10 @@ def getSPN():
 def getValues():
     unitID = request.args.get("unit_id")
     spns = request.args.getlist('spn')
+    strat_time = request.args.get('start_time')
+    end_time = request.args.get('end_time')
     # elements = [x for x in array if x["spn"] in request_data_list]
-    return awsHandler.getData(spns, unitID)
+    return awsHandler.getData(spns, unitID, strat_time,end_time)
 
 
 @app.route('/info', methods=['GET'])

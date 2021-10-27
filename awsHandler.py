@@ -1,6 +1,4 @@
 import datetime
-
-import boto3
 import stumpy
 from pandas import DatetimeIndex, Series, DataFrame
 from pyathena import connect
@@ -8,12 +6,11 @@ import pandas as pd
 import numpy as np
 import json
 from json import JSONEncoder
-from sklearn.preprocessing import StandardScaler
 from adtk.detector import PersistAD
 from adtk.detector import OutlierDetector
 from adtk.detector import AutoregressionAD
 from sklearn.neighbors import LocalOutlierFactor
-
+from os import environ
 
 class NumpyArrayEncoder(JSONEncoder):
     def default(self, obj):
@@ -32,26 +29,25 @@ class NumpyArrayEncoder(JSONEncoder):
 
 
 def authenticate():
-
-    keyId = "ASIA5ZSVDEHMW3ZOP3OY"
-    sKeyId ="FtLfckF1l8b2YxHSLitZECVpFt8LXZOVTlPD+uLh"
-    sessionToken ="IQoJb3JpZ2luX2VjEOH//////////wEaCWV1LXdlc3QtMSJHMEUCIF2SBP8pUUHjJoI62y0TrJ6igZ8YNke/6qqYpQyT7zi9AiEAs8p7Qa0+JfNcK+PJ/W3caNA598UKvK1KyEoejdj/BaQqlQMIeRACGgw5NDgyOTI0OTM3ODUiDH9ZhwIQQScIWwg9zyryAvGhq+7WdZl6gi6KnNj4YjG2AGNAuJLULmkD9770O8s6W58AuiSaQwnXgEIwAo327xbSQxJb9riakirnFK2CXVjBjYhvAfVNY4opplhI4GCHTj8VGAVTIiQz7F69ADlDM4RTgO72wKohNI3wFoKFYCzTDpx2CHvQRy2vAvzzr8204KoMXbPoNNw0zZt+45XN5qYvl/FAsoVfCzb5GQrqxMECfYs1ym3gCWQOPKyoUz4BOlDDL/10XW0HY2Cj+VtZqZXv8/MYZbKnrlodsFFDihVsHjh24Y+Ja81x+1nuFVj47SBTnEDRu7NXsywhTWhQoF6whUPZ/h8Fryszu71jmSOXg/XXpblPI8klz9KimJHtYI9a09UdXz6OmhrwtXnTUTL8hJWoNKfnnlhPkfRpU9/aWFO+bDGVOK9woisfAnUutEEJiCK/MKSb2Jo2fu7OrISCPXMtOzTaitdjcCB31hVu4Z3zs0CDVYtI6zBMSILwYF8wq9TgiwY6pgHvPjLQwpj9t8NyLntsauDDq7sDLe49Wl3FB6UQIi2ici47A4turTJwyNMg4ayC29y7yuSYy1k8RZZ87KCAmL+owthGgAlZR3kQ4mKSBJKrd4MBnZKXWRrVE1TF0qE5OfrrD+dpC+fjkUUcHmJMfC+YyI8FR7uuZuEXOxdZXocU8ckH4YZJcE4GpsSkP0lDquV8Pz22c53Z37xQq14gT1Xrtq91zpMF"
-    return connect(aws_access_key_id=keyId,
-                   aws_secret_access_key=sKeyId,
-                   aws_session_token=sessionToken,
+    return connect(aws_access_key_id = environ.get('AWS_ACCESS_KEY_ID') ,
+                   aws_secret_access_key= environ.get('AWS_SECRET_ACCESS_KEY'),
+                   aws_session_token= environ.get('AWS_SESSION_TOKEN'),
                    s3_staging_dir='s3://peruser-athena-result/',
                    region_name='eu-west-1')
 
 
+connection = authenticate()
+
+
 def getUnitID():
     spn_default = [100, 110, 183, 190, 247, 30000, 30856]
-    conn = authenticate()
+
     df_unit_id = pd.read_sql(
         'SELECT DISTINCT unit_id, spn FROM tierra_dwh_blend.adq_master_can_v2 WHERE spn IN (100, 110, 183, 190, 247, 30000, 30856)',
-        conn)
+        connection)
     df_info = pd.read_sql(
         "SELECT unit_id, unit_name FROM tierra_dwh_blend.bln_master_unit",
-        conn)
+        connection)
     df = pd.merge(df_unit_id, df_info)
     df = df.drop(columns=['spn'])
     df = df.drop_duplicates()
@@ -62,17 +58,23 @@ def getUnitID():
 
 
 def getSPN(unitID):
-    conn = authenticate()
     df = pd.read_sql(
         f"SELECT DISTINCT spn , spn_description FROM tierra_dwh_blend.adq_master_can_v2 WHERE unit_id={unitID} and (spn in (100, 110, 183, 190, 247, 30000, 30856))",
-        conn)
+        connection)
+
+    df_time = pd.read_sql(
+        f"SELECT MAX(timestamp) as max, MIN(timestamp) as min FROM tierra_dwh_blend.adq_master_can_v2 WHERE unit_id={unitID}",
+        connection)
     if df.empty:
         return "Record not found", 400
-    return df.to_json(orient="records")
+    if df_time.empty:
+        return "Record not found", 400
+
+    record = {'spnList': df.to_numpy(), 'info': df['spn_description'].to_numpy(), 'min_time': df_time['min'][0], 'max_time': df_time['max'][0]}
+    return json.dumps({'data': record}, cls=NumpyArrayEncoder)
 
 
-def getData(spns, unitID):
-    conn = authenticate()
+def getData(spns, unitID,start_time,end_time):
     df = pd.DataFrame([],
                       columns=['spn', 'timestamp', 'can_value_converted'])
     data = []
@@ -80,29 +82,37 @@ def getData(spns, unitID):
 
     for spn in spns:
         df = pd.read_sql(
-            f"SELECT DISTINCT spn , timestamp ,can_value_converted FROM tierra_dwh_blend.adq_master_can_v2 WHERE unit_id={unitID} and spn={spn}",
-            conn)
+            f"SELECT DISTINCT spn , timestamp ,can_value_converted FROM tierra_dwh_blend.adq_master_can_v2 WHERE unit_id={unitID} "
+            f"and spn={spn}",
+            connection)
         df = df.drop_duplicates('timestamp')
         df = df.reset_index(drop=True)
 
         df = df.sort_values(by='timestamp')
         timestamp = df['timestamp'].to_numpy().astype('datetime64[s]')
+        if df.size < 100 : continue
+
 
         tmp = pd.merge_asof(df, df_workcycle, left_on='timestamp', right_on='ontime')
-        tmp.loc[(tmp.ontime > tmp.timestamp) | (tmp.offtime < tmp.timestamp), 'ontime'] = pd.NaT
-        tmp.loc[(tmp.ontime > tmp.timestamp) | (tmp.offtime < tmp.timestamp), 'offtime'] = pd.NaT
+        if tmp.empty:
+            df['engineonoff'] = []
+        else:
+            tmp.loc[(tmp.ontime > tmp.timestamp) | (tmp.offtime < tmp.timestamp), 'ontime'] = pd.NaT
+            tmp.loc[(tmp.ontime > tmp.timestamp) | (tmp.offtime < tmp.timestamp), 'offtime'] = pd.NaT
 
-        m_on = tmp.groupby(tmp.ontime).apply(lambda x: x.iloc[[0]])
-        m_on.index = m_on.index.droplevel(0)
 
-        m_off = tmp.groupby(tmp.ontime).apply(lambda x: x.iloc[[-1]])
+            m_on = tmp.groupby(tmp.ontime).apply(lambda x: x.iloc[[0]])
+            m_on.index = m_on.index.droplevel(0)
 
-        m_off.index = m_off.index.droplevel(0)
+            m_off = tmp.groupby(tmp.ontime).apply(lambda x: x.iloc[[-1]])
+            m_off.index = m_off.index.droplevel(0)
 
-        df['engineonoff'] = np.where(df.index.isin(m_on.index), 'ON',
-                                     np.where(df.index.isin(m_off.index), 'OFF', ''))
-        if df.size < 100:
-            return "Record not found", 400
+            df['engineonoff'] = np.where(df.index.isin(m_on.index), 'ON',
+                                         np.where(df.index.isin(m_off.index), 'OFF', ''))
+
+        mask = (df['timestamp'] >= start_time) & (df['timestamp'] <= end_time)
+        df = df.loc[mask]
+
         ids = outlierDetection(df, spn)
 
         record = {'spn': spn, 'x': timestamp, 'y': df['can_value_converted'].to_numpy(), 'ids': ids,
@@ -110,8 +120,7 @@ def getData(spns, unitID):
 
         data.append(record)
 
-    if data:
-
+    if len(data) > 0:
         return json.dumps({'data': data}, cls=NumpyArrayEncoder)
     else:
         return "Record not found", 400
@@ -143,9 +152,8 @@ def outlierDetection(df, spn):
 
 
 def getOnOff(unitID):
-    conn = authenticate()
     df = pd.read_sql(
-        f"SELECT ontime,offtime FROM tierra_dwh_blend.bln_master_engineonoff WHERE unit_id={unitID}", conn)
+        f"SELECT ontime,offtime FROM tierra_dwh_blend.bln_master_engineonoff WHERE unit_id={unitID}", connection)
 
     df = df.sort_values(by='ontime')
     df = df.drop_duplicates('ontime')
@@ -155,13 +163,13 @@ def getOnOff(unitID):
 
 
 def getGeneralInfo(unit_id):
-    conn = authenticate()
+
     df = pd.read_sql(
         f"SELECT tenant, unit_brand_name, unit_type_name, unit_model_name FROM tierra_dwh_blend.bln_master_unit WHERE unit_id={unit_id}",
-        conn)
+        connection)
     df_pos = pd.read_sql(
         f"SELECT unlpos_address FROM blend_smart_duplication_dwh.smartdelta_tierra_dbcore_public_unl_pos WHERE unlpos_unit={unit_id}",
-        conn)
+        connection)
 
     data = {'tenant': df['tenant'].to_numpy()[0], 'unit_brand_name': df['unit_brand_name'].to_numpy()[0],
             'unit_type_name': df['unit_type_name'].to_numpy()[0],
@@ -173,12 +181,12 @@ def getGeneralInfo(unit_id):
 
 
 def searchPattern(unitID, spn, min_time, max_time):
-    conn = authenticate()
+
     data = []
     df = pd.read_sql(
         f"SELECT timestamp ,can_value_converted FROM tierra_dwh_blend.adq_master_can_v2 WHERE "
         f"unit_id={unitID} and spn={spn}",
-        conn)
+        connection)
 
     df = df.sort_values(by='timestamp')
     df = df.drop_duplicates('timestamp')
